@@ -1,0 +1,95 @@
+import {
+  LayoutDashboard,
+  PenLine,
+  Flame,
+  ShieldAlert,
+  Zap,
+  RadioTower,
+  TrendingUp,
+  Dna,
+  BrainCircuit,
+  Settings,
+  MessageSquareText,
+} from "lucide-react";
+
+export const NAV_ITEMS = [
+  {
+    id: "dashboard",
+    label: "Intelligence",
+    href: "/",
+    icon: LayoutDashboard,
+    description: "Mission control overview",
+  },
+  {
+    id: "reply",
+    label: "Reply Intelligence",
+    href: "/reply",
+    icon: MessageSquareText,
+    description: "Multimodal social response engine",
+  },
+  {
+    id: "virality",
+    label: "Virality Analyzer",
+    href: "/virality",
+    icon: Flame,
+    description: "Score tweet virality",
+  },
+  {
+    id: "composer",
+    label: "Composer",
+    href: "/composer",
+    icon: PenLine,
+    description: "Generate tweet variants",
+  },
+  {
+    id: "slop",
+    label: "Slop Detector",
+    href: "/slop",
+    icon: ShieldAlert,
+    description: "Detect AI slop and clichés",
+  },
+  {
+    id: "hooks-lab",
+    label: "Hook Lab",
+    href: "/hooks-lab",
+    icon: Zap,
+    description: "Optimize first-line hooks",
+  },
+  {
+    id: "feed",
+    label: "Feed Simulator",
+    href: "/feed",
+    icon: RadioTower,
+    description: "Simulate distribution",
+  },
+  {
+    id: "trends",
+    label: "Trend Radar",
+    href: "/trends",
+    icon: TrendingUp,
+    description: "Surface emerging topics",
+  },
+  {
+    id: "dna",
+    label: "Creator DNA",
+    href: "/dna",
+    icon: Dna,
+    description: "Extract writing fingerprint",
+  },
+  {
+    id: "strategy",
+    label: "Strategy Brain",
+    href: "/strategy",
+    icon: BrainCircuit,
+    description: "Generate content strategy",
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    href: "/settings",
+    icon: Settings,
+    description: "Model and API configuration",
+  },
+] as const;
+
+export type NavItemId = (typeof NAV_ITEMS)[number]["id"];
