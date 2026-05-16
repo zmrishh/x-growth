@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X, ImageIcon, FileText } from "lucide-react";
+import { Upload, X, ImageIcon, Clipboard } from "lucide-react";
 import { UploadedImage } from "@/types/reply";
 import { MAX_REPLY_IMAGES, MAX_IMAGE_BYTES } from "@/constants/models";
 
@@ -24,6 +24,7 @@ function readFileAsBase64(file: File): Promise<string> {
 
 export function UploadZone({ images, onChange }: UploadZoneProps) {
   const [dragging, setDragging] = useState(false);
+  const [pasted, setPasted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -59,10 +60,41 @@ export function UploadZone({ images, onChange }: UploadZoneProps) {
         });
       }
 
-      onChange([...images, ...newImages]);
+      if (newImages.length > 0) onChange([...images, ...newImages]);
     },
     [images, onChange]
   );
+
+  // Global paste handler — captures Ctrl+V / Cmd+V anywhere on the page
+  useEffect(() => {
+    async function handlePaste(e: ClipboardEvent) {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      const imageFiles: File[] = [];
+      for (const item of Array.from(items)) {
+        if (item.kind === "file" && ACCEPTED.includes(item.type)) {
+          const file = item.getAsFile();
+          if (file) {
+            // Screenshots from the clipboard have no name — give them one
+            const ext = item.type.split("/")[1] ?? "png";
+            const named = new File([file], `paste-${Date.now()}.${ext}`, { type: item.type });
+            imageFiles.push(named);
+          }
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        setPasted(true);
+        setTimeout(() => setPasted(false), 1200);
+        await processFiles(imageFiles);
+      }
+    }
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [processFiles]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -87,8 +119,8 @@ export function UploadZone({ images, onChange }: UploadZoneProps) {
         onClick={() => inputRef.current?.click()}
         className="relative rounded-xl cursor-pointer transition-all duration-200"
         style={{
-          border: `1.5px dashed ${dragging ? "var(--color-accent)" : "var(--color-border-default)"}`,
-          background: dragging ? "var(--color-accent-muted)" : "var(--color-bg-elevated)",
+          border: `1.5px dashed ${dragging || pasted ? "var(--color-accent)" : "var(--color-border-default)"}`,
+          background: dragging || pasted ? "var(--color-accent-muted)" : "var(--color-bg-elevated)",
           padding: images.length > 0 ? "16px" : "32px",
         }}
       >
@@ -104,21 +136,32 @@ export function UploadZone({ images, onChange }: UploadZoneProps) {
         {images.length === 0 ? (
           <div className="flex flex-col items-center gap-3 text-center">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
               style={{
-                background: dragging ? "var(--color-accent)" : "var(--color-bg-overlay)",
+                background: dragging || pasted ? "var(--color-accent)" : "var(--color-bg-overlay)",
               }}
             >
-              <Upload
-                size={18}
-                style={{ color: dragging ? "#09090b" : "var(--color-text-tertiary)" }}
-              />
+              {pasted ? (
+                <Clipboard
+                  size={18}
+                  style={{ color: "#09090b" }}
+                />
+              ) : (
+                <Upload
+                  size={18}
+                  style={{ color: dragging ? "#09090b" : "var(--color-text-tertiary)" }}
+                />
+              )}
             </div>
             <div>
               <p className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
-                Drop screenshots, memes, or tweets here
+                {pasted ? "Pasted!" : "Drop images or paste a screenshot"}
               </p>
               <p className="text-xs mt-1" style={{ color: "var(--color-text-tertiary)" }}>
+                Drag & drop, click to browse, or{" "}
+                <span style={{ color: "var(--color-accent)" }}>⌘V / Ctrl+V</span> to paste
+              </p>
+              <p className="text-[10px] mt-0.5" style={{ color: "var(--color-text-disabled)" }}>
                 JPEG, PNG, GIF, WebP up to 5MB each. Max {MAX_REPLY_IMAGES} images.
               </p>
             </div>
@@ -170,12 +213,31 @@ export function UploadZone({ images, onChange }: UploadZoneProps) {
             )}
           </div>
         )}
+
+        {/* Paste flash overlay when images already present */}
+        <AnimatePresence>
+          {pasted && images.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 rounded-xl flex items-center justify-center pointer-events-none"
+              style={{ background: "var(--color-accent-muted)" }}
+            >
+              <div className="flex items-center gap-2">
+                <Clipboard size={14} style={{ color: "var(--color-accent)" }} />
+                <span className="text-xs font-semibold" style={{ color: "var(--color-accent)" }}>
+                  Pasted
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Image count indicator */}
       {images.length > 0 && (
         <p className="text-[10px]" style={{ color: "var(--color-text-tertiary)" }}>
-          {images.length}/{MAX_REPLY_IMAGES} images loaded
+          {images.length}/{MAX_REPLY_IMAGES} images loaded · ⌘V to add more
         </p>
       )}
 
@@ -185,3 +247,4 @@ export function UploadZone({ images, onChange }: UploadZoneProps) {
     </div>
   );
 }
+
