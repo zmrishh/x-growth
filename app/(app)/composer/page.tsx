@@ -24,6 +24,9 @@ export default function ComposerPage() {
   const [variants, setVariants] = usePersistedState<TweetVariant[]>("composer:variants", []);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"default" | "score">("default");
+  const [mode, setMode] = usePersistedState<"single" | "thread">("composer:mode", "single");
+  const [length, setLength] = usePersistedState<"short" | "medium" | "long">("composer:length", "medium");
+  const [threadCount, setThreadCount] = usePersistedState<number>("composer:threadCount", 5);
 
   const charCount = countChars(idea);
   const overLimit = charCount > MAX_INPUT_CHARS;
@@ -38,7 +41,7 @@ export default function ComposerPage() {
       const res = await fetch("/api/compose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea, context: context || undefined }),
+        body: JSON.stringify({ idea, context: context || undefined, mode, length, threadCount }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -133,6 +136,94 @@ export default function ComposerPage() {
               />
             </div>
 
+            {/* Length + Mode controls */}
+            <div
+              className="mt-3 pt-3 space-y-3"
+              style={{ borderTop: "1px solid var(--color-border-subtle)" }}
+            >
+              {/* Length */}
+              <div>
+                <p className="text-[10px] font-medium mb-1.5" style={{ color: "var(--color-text-tertiary)" }}>
+                  LENGTH
+                </p>
+                <div className="flex gap-1.5">
+                  {(["short", "medium", "long"] as const).map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => setLength(opt)}
+                      className="flex-1 text-[10px] py-1.5 rounded-lg capitalize transition-all"
+                      style={{
+                        background: length === opt ? "var(--color-accent)" : "var(--color-bg-overlay)",
+                        color: length === opt ? "#09090b" : "var(--color-text-tertiary)",
+                        border: `1px solid ${length === opt ? "var(--color-accent)" : "var(--color-border-subtle)"}`,
+                        fontWeight: length === opt ? 600 : 400,
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Mode */}
+              <div>
+                <p className="text-[10px] font-medium mb-1.5" style={{ color: "var(--color-text-tertiary)" }}>
+                  FORMAT
+                </p>
+                <div className="flex gap-1.5">
+                  {(["single", "thread"] as const).map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => setMode(opt)}
+                      className="flex-1 text-[10px] py-1.5 rounded-lg capitalize transition-all"
+                      style={{
+                        background: mode === opt ? "var(--color-accent)" : "var(--color-bg-overlay)",
+                        color: mode === opt ? "#09090b" : "var(--color-text-tertiary)",
+                        border: `1px solid ${mode === opt ? "var(--color-accent)" : "var(--color-border-subtle)"}`,
+                        fontWeight: mode === opt ? 600 : 400,
+                      }}
+                    >
+                      {opt === "single" ? "Single Tweet" : "Thread"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Thread count */}
+              {mode === "thread" && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[10px] font-medium" style={{ color: "var(--color-text-tertiary)" }}>
+                      TWEETS PER THREAD
+                    </p>
+                    <span
+                      className="text-[10px] font-bold tabular-nums"
+                      style={{ color: "var(--color-accent)" }}
+                    >
+                      {threadCount}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={2}
+                    max={10}
+                    step={1}
+                    value={threadCount}
+                    onChange={(e) => setThreadCount(Number(e.target.value))}
+                    className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                    style={{
+                      background: `linear-gradient(to right, var(--color-accent) ${((threadCount - 2) / 8) * 100}%, var(--color-bg-overlay) ${((threadCount - 2) / 8) * 100}%)`,
+                      outline: "none",
+                    }}
+                  />
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[9px]" style={{ color: "var(--color-text-disabled)" }}>2</span>
+                    <span className="text-[9px]" style={{ color: "var(--color-text-disabled)" }}>10</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={generate}
               disabled={!idea.trim() || loading || overLimit}
@@ -144,7 +235,7 @@ export default function ComposerPage() {
               ) : (
                 <Sparkles size={14} />
               )}
-              {loading ? "Generating variants..." : "Generate 8 Variants"}
+              {loading ? "Generating..." : mode === "thread" ? `Generate ${threadCount}-Tweet Threads` : "Generate 8 Variants"}
             </button>
           </div>
 

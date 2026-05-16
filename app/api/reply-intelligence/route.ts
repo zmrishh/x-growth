@@ -36,6 +36,7 @@ const RequestSchema = z.object({
     )
     .max(MAX_REPLY_IMAGES)
     .default([]),
+  replyLength: z.enum(["short", "medium", "long"]).default("medium"),
 });
 
 function extractJSON(raw: string): unknown {
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { textContext, images } = parsed.data;
+    const { textContext, images, replyLength } = parsed.data;
 
     if (!textContext.trim() && images.length === 0) {
       return NextResponse.json(
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
     }
 
     const sanitizedText = sanitizeInput(textContext);
-    const textPrompt = buildReplyUserPrompt(sanitizedText, images.length > 0);
+    const textPrompt = buildReplyUserPrompt(sanitizedText, images.length > 0, replyLength);
     const client = getAnthropicClient();
 
     let rawText: string;

@@ -66,8 +66,9 @@ export type ToneType =
   | "high-curiosity";
 
 export interface TweetVariant {
-  tone: ToneType;
-  content: string;
+  tone: string;
+  content: string;        // single-tweet text OR first tweet in a thread (the hook)
+  tweets?: string[];      // all tweets in sequence — only present in thread mode
   rationale: string;
   estimatedViralityScore: number;
   estimatedCharCount: number;

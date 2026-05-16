@@ -7,6 +7,7 @@ const num = (min = 0, max = 100) =>
 const TweetVariantSchema = z.object({
   tone: str,
   content: str,
+  tweets: z.array(z.string()).nullable().optional().transform((v) => v ?? undefined),
   rationale: str,
   estimatedViralityScore: num(),
   estimatedCharCount: z.number().nullable().optional().transform((v) => v ?? 0),

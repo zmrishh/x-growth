@@ -56,6 +56,7 @@ export default function ReplyIntelligencePage() {
   const [activeTab, setActiveTab] = useState<Tab>("replies");
   const [sort, setSort] = useState<SortOption>("default");
   const [selectedTone, setSelectedTone] = useState<ReplyTone | null>(null);
+  const [replyLength, setReplyLength] = usePersistedState<"short" | "medium" | "long">("reply:length", "medium");
 
   const canAnalyze = (images.length > 0 || textContext.trim().length > 0) && !loading;
 
@@ -78,6 +79,7 @@ export default function ReplyIntelligencePage() {
             base64: img.base64,
             sizeBytes: img.sizeBytes,
           })),
+          replyLength,
         }),
       });
 
@@ -205,6 +207,33 @@ export default function ReplyIntelligencePage() {
                   {textContext.length} chars
                 </span>
               </div>
+            </div>
+          </div>
+
+          {/* Reply length selector */}
+          <div>
+            <p
+              className="text-[10px] font-medium uppercase tracking-wider mb-2"
+              style={{ color: "var(--color-text-tertiary)" }}
+            >
+              Reply Length
+            </p>
+            <div className="flex gap-1.5">
+              {(["short", "medium", "long"] as const).map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => setReplyLength(opt)}
+                  className="flex-1 text-[10px] py-1.5 rounded-lg capitalize transition-all"
+                  style={{
+                    background: replyLength === opt ? "var(--color-accent)" : "var(--color-bg-elevated)",
+                    color: replyLength === opt ? "#09090b" : "var(--color-text-tertiary)",
+                    border: `1px solid ${replyLength === opt ? "var(--color-accent)" : "var(--color-border-subtle)"}`,
+                    fontWeight: replyLength === opt ? 600 : 400,
+                  }}
+                >
+                  {opt}
+                </button>
+              ))}
             </div>
           </div>
 

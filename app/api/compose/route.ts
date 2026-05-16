@@ -9,6 +9,9 @@ import { sanitizeInput } from "@/lib/utils/format";
 const RequestSchema = z.object({
   idea: z.string().min(1).max(MAX_INPUT_CHARS),
   context: z.string().max(500).optional(),
+  mode: z.enum(["single", "thread"]).default("single"),
+  length: z.enum(["short", "medium", "long"]).default("medium"),
+  threadCount: z.number().int().min(2).max(10).default(5),
 });
 
 export async function POST(req: NextRequest) {
@@ -23,15 +26,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const idea = sanitizeInput(parsed.data.idea);
-    const context = parsed.data.context ? sanitizeInput(parsed.data.context) : undefined;
+    const { idea, context, mode, length, threadCount } = parsed.data;
+    const sanitizedIdea = sanitizeInput(idea);
+    const sanitizedContext = context ? sanitizeInput(context) : undefined;
 
     const result = await callClaude({
       model: AI_MODEL,
       system: COMPOSER_SYSTEM_PROMPT,
-      user: buildComposerUserPrompt(idea, context),
+      user: buildComposerUserPrompt(sanitizedIdea, {
+        mode,
+        length,
+        threadCount,
+        context: sanitizedContext,
+      }),
       schema: ComposerResponseSchema,
-      maxTokens: 3000,
+      maxTokens: mode === "thread" ? 6000 : 3000,
     });
 
     return NextResponse.json(result);

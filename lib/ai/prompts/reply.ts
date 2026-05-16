@@ -140,12 +140,26 @@ Return ONLY valid JSON matching this exact structure:
   "bestReplyRationale": string
 }`;
 
-export function buildReplyUserPrompt(textContext: string, hasImages: boolean): string {
+export type ReplyLength = "short" | "medium" | "long";
+
+const REPLY_LENGTH_GUIDE: Record<ReplyLength, string> = {
+  short:  "1-2 sentences max. Under 100 characters ideally. Precision over completeness.",
+  medium: "2-4 sentences. Full thought without padding. Current default.",
+  long:   "4-8 sentences. Expand with a specific example, counter-angle, or story beat. Still tight — earn every word.",
+};
+
+export function buildReplyUserPrompt(
+  textContext: string,
+  hasImages: boolean,
+  replyLength: ReplyLength = "medium"
+): string {
   const imageNote = hasImages
     ? "Images have been provided above. Analyze each one carefully for text content, visual tone, meme structure, and context before generating replies."
     : "No images provided. Base your analysis entirely on the text context.";
 
   return `${imageNote}
+
+LENGTH REQUIREMENT: ${REPLY_LENGTH_GUIDE[replyLength]} Apply this to ALL 12 reply variants.
 
 ${textContext ? `<text_context>\n${textContext}\n</text_context>` : "No additional text context provided."}
 
