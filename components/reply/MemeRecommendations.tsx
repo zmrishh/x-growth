@@ -8,7 +8,7 @@ interface MemeRecommendationsProps {
   recommendations: MemeRecommendation[];
 }
 
-const ENERGY_COLORS = {
+const ENERGY_COLORS: Record<string, string> = {
   low: "var(--color-text-secondary)",
   medium: "var(--color-warning)",
   high: "var(--color-danger)",

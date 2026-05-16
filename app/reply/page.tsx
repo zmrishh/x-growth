@@ -97,7 +97,10 @@ export default function ReplyIntelligencePage() {
   const sortedReplies = result ? sortReplies(result.replies, sort) : [];
 
   return (
-    <div className="h-[calc(100vh-56px)] flex flex-col overflow-hidden">
+    <div
+      className="flex flex-col"
+      style={{ height: "calc(100vh - 56px)", overflow: "hidden" }}
+    >
       {/* Page header */}
       <div
         className="px-6 py-4 flex-shrink-0"

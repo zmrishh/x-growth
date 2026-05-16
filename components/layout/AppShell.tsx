@@ -23,11 +23,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <Sidebar onCommandPalette={() => setCmdOpen(true)} />
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
-      <div className="flex flex-col" style={{ marginLeft: "220px", minHeight: "100vh" }}>
+      <div
+        className="flex flex-col"
+        style={{ marginLeft: "220px", height: "100vh", overflow: "hidden" }}
+      >
         <TopBar />
         <main
           className="flex-1 overflow-y-auto"
-          style={{ background: "var(--color-bg-base)" }}
+          style={{ background: "var(--color-bg-base)", minHeight: 0 }}
         >
           {children}
         </main>

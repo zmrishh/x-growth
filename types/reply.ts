@@ -23,12 +23,12 @@ export interface ReplyScore {
 }
 
 export interface ReplyVariant {
-  tone: ReplyTone;
+  tone: string;
   content: string;
   score: ReplyScore;
   reasoning: string;
   wasRewritten: boolean;
-  rewriteNote?: string;
+  rewriteNote?: string | null;
 }
 
 export type AccountType =
@@ -63,9 +63,9 @@ export type ContentTone =
   | "neutral";
 
 export interface SocialContext {
-  inferredAccountType: AccountType;
+  inferredAccountType: string;
   inferredAudience: string;
-  contentTone: ContentTone;
+  contentTone: string;
   contentSummary: string;
   hiddenContext: string;
   powerDynamic: string;
@@ -95,11 +95,11 @@ export type MemeStyle =
   | "nothing-meme-needed";
 
 export interface MemeRecommendation {
-  style: MemeStyle;
+  style: string;
   description: string;
   rationale: string;
-  applicableReplies: ReplyTone[];
-  energyLevel: "low" | "medium" | "high";
+  applicableReplies: string[];
+  energyLevel: string;
   searchQuery: string;
 }
 
@@ -117,7 +117,7 @@ export interface ReplyFeedPrediction {
 
 export interface ImageAnalysis {
   extractedText: string;
-  contentType: "tweet-screenshot" | "meme" | "conversation" | "image" | "other";
+  contentType: string;
   emotionalTone: string;
   memeStructure: string | null;
   engagementIntent: string;
@@ -131,7 +131,7 @@ export interface ReplyIntelligenceResult {
   replies: ReplyVariant[];
   memeRecommendations: MemeRecommendation[];
   feedPredictions: Record<string, ReplyFeedPrediction>;
-  bestReplyTone: ReplyTone;
+  bestReplyTone: string;
   bestReplyRationale: string;
 }
 

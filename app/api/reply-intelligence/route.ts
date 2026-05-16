@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { callClaudeMultimodal, callClaude, ImageBlock } from "@/lib/ai/client";
+import { getAnthropicClient, ImageBlock } from "@/lib/ai/client";
 import {
   REPLY_INTELLIGENCE_SYSTEM_PROMPT,
   buildReplyUserPrompt,
@@ -8,6 +8,7 @@ import {
 import { ReplyIntelligenceSchema } from "@/lib/ai/schemas/reply";
 import { AI_MODEL_REPLY, MAX_REPLY_IMAGES, MAX_IMAGE_BYTES } from "@/constants/models";
 import { sanitizeInput } from "@/lib/utils/format";
+import Anthropic from "@anthropic-ai/sdk";
 
 const SUPPORTED_MIME_TYPES = [
   "image/jpeg",
@@ -37,6 +38,25 @@ const RequestSchema = z.object({
     .default([]),
 });
 
+function extractJSON(raw: string): unknown {
+  // Try JSON fence first
+  const fenceMatch = raw.match(/```json\s*([\s\S]*?)\s*```/);
+  if (fenceMatch) {
+    try { return JSON.parse(fenceMatch[1]); } catch {}
+  }
+
+  // Try direct brace extraction
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start !== -1 && end !== -1) {
+    try { return JSON.parse(raw.slice(start, end + 1)); } catch {}
+  }
+
+  throw new Error(
+    `AI returned unparseable output. First 500 chars: ${raw.slice(0, 500)}`
+  );
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -60,11 +80,12 @@ export async function POST(req: NextRequest) {
 
     const sanitizedText = sanitizeInput(textContext);
     const textPrompt = buildReplyUserPrompt(sanitizedText, images.length > 0);
+    const client = getAnthropicClient();
 
-    let result;
+    let rawText: string;
 
     if (images.length > 0) {
-      const validImages: ImageBlock[] = [];
+      const imageBlocks: Anthropic.ImageBlockParam[] = [];
 
       for (const img of images) {
         if (!isSupportedMime(img.type)) {
@@ -80,28 +101,59 @@ export async function POST(req: NextRequest) {
           ? img.base64.split(",")[1]
           : img.base64;
 
-        validImages.push({ base64: base64Clean, mediaType: img.type });
+        imageBlocks.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: img.type as SupportedMimeType,
+            data: base64Clean,
+          },
+        });
       }
 
-      result = await callClaudeMultimodal({
+      const response = await client.messages.create({
         model: AI_MODEL_REPLY,
+        max_tokens: 8192,
         system: REPLY_INTELLIGENCE_SYSTEM_PROMPT,
-        textPrompt,
-        images: validImages,
-        schema: ReplyIntelligenceSchema,
-        maxTokens: 6000,
+        messages: [
+          {
+            role: "user",
+            content: [
+              ...imageBlocks,
+              { type: "text", text: textPrompt },
+            ],
+          },
+        ],
       });
+
+      rawText = response.content[0].type === "text" ? response.content[0].text : "";
     } else {
-      result = await callClaude({
+      const response = await client.messages.create({
         model: AI_MODEL_REPLY,
+        max_tokens: 8192,
         system: REPLY_INTELLIGENCE_SYSTEM_PROMPT,
-        user: textPrompt,
-        schema: ReplyIntelligenceSchema,
-        maxTokens: 6000,
+        messages: [{ role: "user", content: textPrompt }],
       });
+
+      rawText = response.content[0].type === "text" ? response.content[0].text : "";
     }
 
-    return NextResponse.json(result);
+    const parsed2 = extractJSON(rawText);
+    const validated = ReplyIntelligenceSchema.safeParse(parsed2);
+
+    if (!validated.success) {
+      console.error("[/api/reply-intelligence] Schema validation failed:", validated.error.message);
+      console.error("[/api/reply-intelligence] Raw (first 1000):", rawText.slice(0, 1000));
+      return NextResponse.json(
+        {
+          error: `AI response validation failed: ${validated.error.message}`,
+          code: "SCHEMA_VALIDATION_ERROR",
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(validated.data);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("[/api/reply-intelligence]", message);
