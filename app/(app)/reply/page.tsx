@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
+import { addHistoryEntry } from "@/lib/hooks/useHistory";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, MessageSquareText, ArrowRight, ChevronDown, Star } from "lucide-react";
 import { ReplyIntelligenceResult, ReplyTone, UploadedImage } from "@/types/reply";
@@ -47,9 +49,9 @@ function sortReplies(
 
 export default function ReplyIntelligencePage() {
   const [images, setImages] = useState<UploadedImage[]>([]);
-  const [textContext, setTextContext] = useState("");
+  const [textContext, setTextContext] = usePersistedState("reply:textContext", "");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ReplyIntelligenceResult | null>(null);
+  const [result, setResult] = usePersistedState<ReplyIntelligenceResult | null>("reply:result", null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("replies");
   const [sort, setSort] = useState<SortOption>("default");
@@ -86,6 +88,14 @@ export default function ReplyIntelligencePage() {
 
       const data: ReplyIntelligenceResult = await res.json();
       setResult(data);
+      addHistoryEntry({
+        module: "reply",
+        inputPreview: textContext.slice(0, 120) || "(image context)",
+        summary: `${data.replies.length} replies · best: ${data.bestReplyTone}`,
+        timestamp: Date.now(),
+        input: textContext,
+        result: data,
+      });
       setSelectedTone(data.bestReplyTone as ReplyTone);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");

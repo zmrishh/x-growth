@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
+import { addHistoryEntry } from "@/lib/hooks/useHistory";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, BrainCircuit } from "lucide-react";
 import { ContentPlan } from "@/types/analysis";
@@ -21,13 +23,11 @@ const TONE_LABELS: Record<string, string> = {
 };
 
 export default function StrategyPage() {
-  const [input, setInput] = useState("");
+  const [input, setInput] = usePersistedState("strategy:input", "");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ContentPlan | null>(null);
+  const [result, setResult] = usePersistedState<ContentPlan | null>("strategy:result", null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"calendar" | "themes" | "arcs" | "positioning">(
-    "calendar"
-  );
+  const [activeTab, setActiveTab] = useState<"calendar" | "themes" | "arcs" | "positioning">("calendar");
 
   const charCount = countChars(input);
   const overLimit = charCount > MAX_INPUT_CHARS;
@@ -48,8 +48,17 @@ export default function StrategyPage() {
         const data = await res.json();
         throw new Error(data.error ?? "Strategy generation failed");
       }
-      setResult(await res.json());
+      const data: ContentPlan = await res.json();
+      setResult(data);
       setActiveTab("calendar");
+      addHistoryEntry({
+        module: "strategy",
+        inputPreview: input.slice(0, 120),
+        summary: `${data.contentCalendar.length}-day plan · ${data.weeklyThemes.length} themes`,
+        timestamp: Date.now(),
+        input,
+        result: data,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

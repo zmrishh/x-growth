@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
+import { addHistoryEntry } from "@/lib/hooks/useHistory";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, RadioTower } from "lucide-react";
 import { FeedSimulation } from "@/types/analysis";
@@ -23,9 +25,9 @@ const ENGAGEMENT_LABELS: Record<string, string> = {
 };
 
 export default function FeedPage() {
-  const [input, setInput] = useState("");
+  const [input, setInput] = usePersistedState("feed:input", "");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<FeedSimulation | null>(null);
+  const [result, setResult] = usePersistedState<FeedSimulation | null>("feed:result", null);
   const [error, setError] = useState<string | null>(null);
 
   const charCount = countChars(input);
@@ -47,7 +49,16 @@ export default function FeedPage() {
         const data = await res.json();
         throw new Error(data.error ?? "Simulation failed");
       }
-      setResult(await res.json());
+      const data: FeedSimulation = await res.json();
+      setResult(data);
+      addHistoryEntry({
+        module: "feed",
+        inputPreview: input.slice(0, 120),
+        summary: `Reach: ${data.reachProbability}% · Algo: ${data.algorithmFriendliness}`,
+        timestamp: Date.now(),
+        input,
+        result: data,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

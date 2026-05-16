@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
+import { addHistoryEntry } from "@/lib/hooks/useHistory";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { TrendSignal } from "@/types/analysis";
@@ -21,9 +23,9 @@ const COMPETITION_CONFIG = {
 };
 
 export default function TrendsPage() {
-  const [niche, setNiche] = useState("");
+  const [niche, setNiche] = usePersistedState("trends:niche", "");
   const [loading, setLoading] = useState(false);
-  const [signals, setSignals] = useState<TrendSignal[]>([]);
+  const [signals, setSignals] = usePersistedState<TrendSignal[]>("trends:signals", []);
   const [error, setError] = useState<string | null>(null);
 
   const charCount = countChars(niche);
@@ -46,7 +48,16 @@ export default function TrendsPage() {
         throw new Error(data.error ?? "Trend scan failed");
       }
       const data = await res.json();
-      setSignals(data.signals ?? []);
+      const sigs: TrendSignal[] = data.signals ?? [];
+      setSignals(sigs);
+      addHistoryEntry({
+        module: "trends",
+        inputPreview: niche.slice(0, 120),
+        summary: `${sigs.length} trend signals found`,
+        timestamp: Date.now(),
+        input: niche,
+        result: data,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

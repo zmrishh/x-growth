@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { Clock } from "lucide-react";
 import { NAV_ITEMS } from "@/constants/nav";
 import { cn } from "@/lib/utils/cn";
+import { useHistory } from "@/lib/hooks/useHistory";
 
 interface SidebarProps {
   onCommandPalette: () => void;
+  onHistory: () => void;
 }
 
-export function Sidebar({ onCommandPalette }: SidebarProps) {
+export function Sidebar({ onCommandPalette, onHistory }: SidebarProps) {
   const pathname = usePathname();
+  const { entries } = useHistory();
 
   return (
     <aside
@@ -142,15 +146,38 @@ export function Sidebar({ onCommandPalette }: SidebarProps) {
 
       {/* Footer */}
       <div
-        className="px-5 py-4"
+        className="px-3 py-3 space-y-1"
         style={{ borderTop: "1px solid var(--color-border-subtle)" }}
       >
-        <p className="text-[10px]" style={{ color: "var(--color-text-tertiary)" }}>
-          Distribution Intelligence
-        </p>
-        <p className="text-[10px]" style={{ color: "var(--color-text-disabled)" }}>
-          v0.1.0 — private
-        </p>
+        {/* History button */}
+        <button
+          onClick={onHistory}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all hover:bg-[var(--color-bg-hover)]"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          <Clock size={14} style={{ color: "var(--color-text-tertiary)" }} />
+          <span className="text-[13px] font-medium flex-1">History</span>
+          {entries.length > 0 && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded-full"
+              style={{
+                background: "var(--color-bg-overlay)",
+                color: "var(--color-text-tertiary)",
+              }}
+            >
+              {entries.length}
+            </span>
+          )}
+        </button>
+
+        <div className="px-2 pt-1">
+          <p className="text-[10px]" style={{ color: "var(--color-text-tertiary)" }}>
+            Distribution Intelligence
+          </p>
+          <p className="text-[10px]" style={{ color: "var(--color-text-disabled)" }}>
+            v0.1.0 — private
+          </p>
+        </div>
       </div>
     </aside>
   );

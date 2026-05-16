@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
+import { addHistoryEntry } from "@/lib/hooks/useHistory";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowRight, Zap } from "lucide-react";
 import { HookAnalysis } from "@/types/analysis";
@@ -28,9 +30,9 @@ const TECHNIQUE_COLORS: Record<string, string> = {
 };
 
 export default function HookLabPage() {
-  const [input, setInput] = useState("");
+  const [input, setInput] = usePersistedState("hooks-lab:input", "");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<HookAnalysis | null>(null);
+  const [result, setResult] = usePersistedState<HookAnalysis | null>("hooks-lab:result", null);
   const [error, setError] = useState<string | null>(null);
   const [selectedRewrite, setSelectedRewrite] = useState<number>(0);
 
@@ -56,6 +58,14 @@ export default function HookLabPage() {
       const data: HookAnalysis = await res.json();
       setResult(data);
       setSelectedRewrite(0);
+      addHistoryEntry({
+        module: "hooks-lab",
+        inputPreview: input.slice(0, 120),
+        summary: `Hook score: ${data.hookScore} · ${data.rewrites.length} rewrites`,
+        timestamp: Date.now(),
+        input,
+        result: data,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

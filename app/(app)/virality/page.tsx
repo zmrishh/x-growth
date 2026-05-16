@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
+import { addHistoryEntry } from "@/lib/hooks/useHistory";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowRight } from "lucide-react";
 import { ViralityReport } from "@/types/analysis";
@@ -19,9 +21,9 @@ const EXAMPLE_TWEETS = [
 ];
 
 export default function ViralityPage() {
-  const [input, setInput] = useState("");
+  const [input, setInput] = usePersistedState("virality:input", "");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ViralityReport | null>(null);
+  const [result, setResult] = usePersistedState<ViralityReport | null>("virality:result", null);
   const [error, setError] = useState<string | null>(null);
 
   const charCount = countChars(input);
@@ -43,7 +45,16 @@ export default function ViralityPage() {
         const data = await res.json();
         throw new Error(data.error ?? "Analysis failed");
       }
-      setResult(await res.json());
+      const data: ViralityReport = await res.json();
+      setResult(data);
+      addHistoryEntry({
+        module: "virality",
+        inputPreview: input.slice(0, 120),
+        summary: `Score: ${data.overallScore} · ${data.verdict}`,
+        timestamp: Date.now(),
+        input,
+        result: data,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

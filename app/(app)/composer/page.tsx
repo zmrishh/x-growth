@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
+import { addHistoryEntry } from "@/lib/hooks/useHistory";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowRight, Sparkles } from "lucide-react";
 import { TweetVariant } from "@/types/analysis";
@@ -16,10 +18,10 @@ const EXAMPLE_IDEAS = [
 ];
 
 export default function ComposerPage() {
-  const [idea, setIdea] = useState("");
-  const [context, setContext] = useState("");
+  const [idea, setIdea] = usePersistedState("composer:idea", "");
+  const [context, setContext] = usePersistedState("composer:context", "");
   const [loading, setLoading] = useState(false);
-  const [variants, setVariants] = useState<TweetVariant[]>([]);
+  const [variants, setVariants] = usePersistedState<TweetVariant[]>("composer:variants", []);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"default" | "score">("default");
 
@@ -43,7 +45,16 @@ export default function ComposerPage() {
         throw new Error(data.error ?? "Generation failed");
       }
       const data = await res.json();
-      setVariants(data.variants ?? []);
+      const v: TweetVariant[] = data.variants ?? [];
+      setVariants(v);
+      addHistoryEntry({
+        module: "composer",
+        inputPreview: idea.slice(0, 120),
+        summary: `${v.length} variants generated`,
+        timestamp: Date.now(),
+        input: idea,
+        result: data,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

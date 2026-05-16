@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
+import { addHistoryEntry } from "@/lib/hooks/useHistory";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowRight } from "lucide-react";
 import { SlopReport } from "@/types/analysis";
@@ -20,9 +22,9 @@ const SLOP_EXAMPLES = [
 type ResultTab = "flagged" | "rewrite";
 
 export default function SlopPage() {
-  const [input, setInput] = useState("");
+  const [input, setInput] = usePersistedState("slop:input", "");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<SlopReport | null>(null);
+  const [result, setResult] = usePersistedState<SlopReport | null>("slop:result", null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ResultTab>("flagged");
 
@@ -46,7 +48,16 @@ export default function SlopPage() {
         const data = await res.json();
         throw new Error(data.error ?? "Detection failed");
       }
-      setResult(await res.json());
+      const data: SlopReport = await res.json();
+      setResult(data);
+      addHistoryEntry({
+        module: "slop",
+        inputPreview: input.slice(0, 120),
+        summary: `Slop: ${data.slopScore} · ${data.overallVerdict}`,
+        timestamp: Date.now(),
+        input,
+        result: data,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

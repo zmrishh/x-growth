@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
+import { addHistoryEntry } from "@/lib/hooks/useHistory";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Dna } from "lucide-react";
 import { CreatorDNA } from "@/types/analysis";
@@ -11,9 +13,9 @@ import { countChars } from "@/lib/utils/format";
 const MAX_DNA_CHARS = 8000;
 
 export default function DNAPage() {
-  const [input, setInput] = useState("");
+  const [input, setInput] = usePersistedState("dna:input", "");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<CreatorDNA | null>(null);
+  const [result, setResult] = usePersistedState<CreatorDNA | null>("dna:result", null);
   const [error, setError] = useState<string | null>(null);
 
   const charCount = countChars(input);
@@ -35,7 +37,16 @@ export default function DNAPage() {
         const data = await res.json();
         throw new Error(data.error ?? "DNA extraction failed");
       }
-      setResult(await res.json());
+      const data: CreatorDNA = await res.json();
+      setResult(data);
+      addHistoryEntry({
+        module: "dna",
+        inputPreview: input.slice(0, 120),
+        summary: `Authority: ${data.authorityLevel} · ${data.toneSignature.slice(0, 40)}`,
+        timestamp: Date.now(),
+        input,
+        result: data,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
