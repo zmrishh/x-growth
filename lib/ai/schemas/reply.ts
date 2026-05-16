@@ -1,83 +1,88 @@
 import { z } from "zod";
 
+// Coerce null/undefined to empty string for any string field Claude might omit or null
+const str = z.string().nullable().optional().transform((v) => v ?? "");
+const num = (min = 0, max = 100) =>
+  z.number().min(min).max(max).nullable().optional().transform((v) => v ?? 0);
+const bool = z.boolean().nullable().optional().transform((v) => v ?? false);
+
 const ReplyScoreSchema = z.object({
-  slopScore: z.number().min(0).max(100),
-  originalityScore: z.number().min(0).max(100),
-  standoutProbability: z.number().min(0).max(100),
-  replyToLikeRatio: z.number().min(0).max(100),
-  cringeRisk: z.number().min(0).max(100),
-  audienceResonance: z.number().min(0).max(100),
-  aiGeneratedProbability: z.number().min(0).max(100),
+  slopScore: num(),
+  originalityScore: num(),
+  standoutProbability: num(),
+  replyToLikeRatio: num(),
+  cringeRisk: num(),
+  audienceResonance: num(),
+  aiGeneratedProbability: num(),
 });
 
 const SocialContextSchema = z.object({
-  inferredAccountType: z.string(),
-  inferredAudience: z.string(),
-  contentTone: z.string(),
-  contentSummary: z.string(),
-  hiddenContext: z.string().default(""),
-  powerDynamic: z.string().default(""),
-  replyStrategy: z.string().default(""),
-  whatMakesAReplyStandOut: z.string().default(""),
-  whatToAvoid: z.string().default(""),
-  communityNorms: z.string().default(""),
-  engagementIntent: z.string().default(""),
-  isItAJoke: z.boolean().default(false),
-  isItIronic: z.boolean().default(false),
-  ironyLevel: z.number().min(0).max(100).default(0),
-  humorStyle: z.string().nullable().default(null),
-  statusGame: z.string().default(""),
+  inferredAccountType: str,
+  inferredAudience: str,
+  contentTone: str,
+  contentSummary: str,
+  hiddenContext: str,
+  powerDynamic: str,
+  replyStrategy: str,
+  whatMakesAReplyStandOut: str,
+  whatToAvoid: str,
+  communityNorms: str,
+  engagementIntent: str,
+  isItAJoke: bool,
+  isItIronic: bool,
+  ironyLevel: num(),
+  humorStyle: z.string().nullable().optional().transform((v) => v ?? null),
+  statusGame: str,
 });
 
 const ImageAnalysisSchema = z.object({
-  extractedText: z.string().default(""),
-  contentType: z.string().default("other"),
-  emotionalTone: z.string().default(""),
-  memeStructure: z.string().nullable().default(null),
-  engagementIntent: z.string().default(""),
-  visualSlopRisk: z.number().min(0).max(100).default(0),
-  keyInsights: z.array(z.string()).default([]),
+  extractedText: str,
+  contentType: str,
+  emotionalTone: str,
+  memeStructure: z.string().nullable().optional().transform((v) => v ?? null),
+  engagementIntent: str,
+  visualSlopRisk: num(),
+  keyInsights: z.array(z.string()).nullable().optional().transform((v) => v ?? []),
 });
 
-// Use z.string() instead of strict enum — Claude occasionally varies tone names
 const ReplyVariantSchema = z.object({
-  tone: z.string(),
-  content: z.string(),
+  tone: str,
+  content: str,
   score: ReplyScoreSchema,
-  reasoning: z.string().default(""),
-  wasRewritten: z.boolean().default(false),
-  rewriteNote: z.string().nullable().optional(),
+  reasoning: str,
+  wasRewritten: bool,
+  rewriteNote: z.string().nullable().optional().transform((v) => v ?? null),
 });
 
 const MemeRecommendationSchema = z.object({
-  style: z.string(),
-  description: z.string(),
-  rationale: z.string(),
-  applicableReplies: z.array(z.string()).default([]),
-  energyLevel: z.string().default("medium"),
-  searchQuery: z.string().default(""),
+  style: str,
+  description: str,
+  rationale: str,
+  applicableReplies: z.array(z.string()).nullable().optional().transform((v) => v ?? []),
+  energyLevel: str,
+  searchQuery: str,
 });
 
 const ReplyFeedPredictionSchema = z.object({
-  estimatedLikes: z.string().default("unknown"),
-  estimatedReplies: z.string().default("unknown"),
-  repostProbability: z.number().min(0).max(100).default(0),
-  profileClickProbability: z.number().min(0).max(100).default(0),
-  followConversionProbability: z.number().min(0).max(100).default(0),
-  blendsIn: z.boolean().default(false),
-  standsOut: z.boolean().default(false),
-  soundsManufactured: z.boolean().default(false),
-  visibilityScore: z.number().min(0).max(100).default(0),
+  estimatedLikes: str,
+  estimatedReplies: str,
+  repostProbability: num(),
+  profileClickProbability: num(),
+  followConversionProbability: num(),
+  blendsIn: bool,
+  standsOut: bool,
+  soundsManufactured: bool,
+  visibilityScore: num(),
 });
 
 export const ReplyIntelligenceSchema = z.object({
   socialContext: SocialContextSchema,
-  imageAnalyses: z.array(ImageAnalysisSchema).default([]),
+  imageAnalyses: z.array(ImageAnalysisSchema).nullable().optional().transform((v) => v ?? []),
   replies: z.array(ReplyVariantSchema).min(1),
-  memeRecommendations: z.array(MemeRecommendationSchema).default([]),
-  feedPredictions: z.record(z.string(), ReplyFeedPredictionSchema).default({}),
-  bestReplyTone: z.string().default("smart"),
-  bestReplyRationale: z.string().default(""),
+  memeRecommendations: z.array(MemeRecommendationSchema).nullable().optional().transform((v) => v ?? []),
+  feedPredictions: z.record(z.string(), ReplyFeedPredictionSchema).nullable().optional().transform((v) => v ?? {}),
+  bestReplyTone: str,
+  bestReplyRationale: str,
 });
 
 export type ReplyIntelligenceSchemaType = z.infer<typeof ReplyIntelligenceSchema>;

@@ -1,99 +1,120 @@
 import { z } from "zod";
 
+const str = z.string().nullable().optional().transform((v) => v ?? "");
+const num = (min = 0, max = 100) =>
+  z.number().min(min).max(max).nullable().optional().transform((v) => v ?? 0);
+const strs = z.array(z.string()).nullable().optional().transform((v) => v ?? []);
+
 export const HookRewriteSchema = z.object({
-  version: z.string(),
-  hook: z.string(),
-  technique: z.string(),
-  score: z.number().min(0).max(100),
-  rationale: z.string(),
+  version: str,
+  hook: str,
+  technique: str,
+  score: num(),
+  rationale: str,
 });
 
 export const HookAnalysisSchema = z.object({
-  originalHook: z.string(),
-  hookScore: z.number().min(0).max(100),
-  weaknesses: z.array(z.string()),
-  rewrites: z.array(HookRewriteSchema).min(1).max(8),
+  originalHook: str,
+  hookScore: num(),
+  weaknesses: strs,
+  rewrites: z.array(HookRewriteSchema).min(1),
 });
 
 export const FeedSimulationSchema = z.object({
-  likelyEngagementType: z.array(z.string()),
-  reachProbability: z.number().min(0).max(100),
-  followerConversionProbability: z.number().min(0).max(100),
-  repostProbability: z.number().min(0).max(100),
-  discussionProbability: z.number().min(0).max(100),
-  negativeSignalRisk: z.number().min(0).max(100),
-  algorithmFriendliness: z.number().min(0).max(100),
-  reasoning: z.string(),
-  predictedAudience: z.string(),
+  likelyEngagementType: strs,
+  reachProbability: num(),
+  followerConversionProbability: num(),
+  repostProbability: num(),
+  discussionProbability: num(),
+  negativeSignalRisk: num(),
+  algorithmFriendliness: num(),
+  reasoning: str,
+  predictedAudience: str,
 });
 
 const CadenceProfileSchema = z.object({
-  avgSentenceLength: z.number(),
-  sentenceVariance: z.enum(["high", "medium", "low"]),
-  paragraphStyle: z.enum(["single-line", "short-blocks", "long-form", "mixed"]),
-  punctuationStyle: z.string(),
+  avgSentenceLength: z.number().nullable().optional().transform((v) => v ?? 0),
+  sentenceVariance: z
+    .enum(["high", "medium", "low"])
+    .nullable()
+    .optional()
+    .transform((v) => v ?? "medium"),
+  paragraphStyle: z
+    .enum(["single-line", "short-blocks", "long-form", "mixed"])
+    .nullable()
+    .optional()
+    .transform((v) => v ?? "mixed"),
+  punctuationStyle: str,
 });
 
 const EmotionalProfileSchema = z.object({
-  dominantEmotion: z.string(),
-  secondaryEmotions: z.array(z.string()),
-  tensionLevel: z.number().min(0).max(100),
-  urgencyLevel: z.number().min(0).max(100),
-  intimacyLevel: z.number().min(0).max(100),
+  dominantEmotion: str,
+  secondaryEmotions: strs,
+  tensionLevel: num(),
+  urgencyLevel: num(),
+  intimacyLevel: num(),
 });
 
 export const CreatorDNASchema = z.object({
   cadenceProfile: CadenceProfileSchema,
-  toneSignature: z.string(),
+  toneSignature: str,
   emotionalProfile: EmotionalProfileSchema,
-  vocabularyDensity: z.number().min(0).max(100),
-  authorityLevel: z.number().min(0).max(100),
-  hookStructure: z.string(),
-  sentenceRhythm: z.string(),
-  writingPersonality: z.string(),
-  topTopics: z.array(z.string()),
-  uniquePatterns: z.array(z.string()),
+  vocabularyDensity: num(),
+  authorityLevel: num(),
+  hookStructure: str,
+  sentenceRhythm: str,
+  writingPersonality: str,
+  topTopics: strs,
+  uniquePatterns: strs,
 });
 
 const TrendSignalSchema = z.object({
-  topic: z.string(),
-  momentum: z.enum(["rising", "peaking", "declining"]),
-  competitionLevel: z.enum(["low", "medium", "high"]),
-  opportunity: z.string(),
-  suggestedAngles: z.array(z.string()),
-  relevanceScore: z.number().min(0).max(100),
+  topic: str,
+  momentum: z
+    .enum(["rising", "peaking", "declining"])
+    .nullable()
+    .optional()
+    .transform((v) => v ?? "rising"),
+  competitionLevel: z
+    .enum(["low", "medium", "high"])
+    .nullable()
+    .optional()
+    .transform((v) => v ?? "medium"),
+  opportunity: str,
+  suggestedAngles: strs,
+  relevanceScore: num(),
 });
 
 export const TrendRadarSchema = z.object({
-  signals: z.array(TrendSignalSchema),
+  signals: z.array(TrendSignalSchema).nullable().optional().transform((v) => v ?? []),
 });
 
 const WeeklyThemeSchema = z.object({
-  theme: z.string(),
-  rationale: z.string(),
-  keyMessages: z.array(z.string()),
+  theme: str,
+  rationale: str,
+  keyMessages: strs,
 });
 
 const NarrativeArcSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  posts: z.number(),
-  duration: z.string(),
+  title: str,
+  description: str,
+  posts: z.number().nullable().optional().transform((v) => v ?? 0),
+  duration: str,
 });
 
 const ContentCalendarEntrySchema = z.object({
-  day: z.string(),
-  topic: z.string(),
-  tone: z.string(),
-  hook: z.string(),
-  notes: z.string(),
+  day: str,
+  topic: str,
+  tone: str,
+  hook: str,
+  notes: str,
 });
 
 export const ContentPlanSchema = z.object({
-  weeklyThemes: z.array(WeeklyThemeSchema),
-  narrativeArcs: z.array(NarrativeArcSchema),
-  audiencePositioning: z.string(),
-  authorityBuildingStrategy: z.string(),
-  nicheDominanceStrategy: z.string(),
-  contentCalendar: z.array(ContentCalendarEntrySchema),
+  weeklyThemes: z.array(WeeklyThemeSchema).nullable().optional().transform((v) => v ?? []),
+  narrativeArcs: z.array(NarrativeArcSchema).nullable().optional().transform((v) => v ?? []),
+  audiencePositioning: str,
+  authorityBuildingStrategy: str,
+  nicheDominanceStrategy: str,
+  contentCalendar: z.array(ContentCalendarEntrySchema).nullable().optional().transform((v) => v ?? []),
 });

@@ -1,24 +1,19 @@
 import { z } from "zod";
 
+const str = z.string().nullable().optional().transform((v) => v ?? "");
+const num = (min = 0, max = 100) =>
+  z.number().min(min).max(max).nullable().optional().transform((v) => v ?? 0);
+
 const TweetVariantSchema = z.object({
-  tone: z.enum([
-    "authority",
-    "founder",
-    "technical",
-    "storytelling",
-    "contrarian",
-    "banger",
-    "minimalist",
-    "high-curiosity",
-  ]),
-  content: z.string(),
-  rationale: z.string(),
-  estimatedViralityScore: z.number().min(0).max(100),
-  estimatedCharCount: z.number(),
+  tone: str,
+  content: str,
+  rationale: str,
+  estimatedViralityScore: num(),
+  estimatedCharCount: z.number().nullable().optional().transform((v) => v ?? 0),
 });
 
 export const ComposerResponseSchema = z.object({
-  variants: z.array(TweetVariantSchema).min(1).max(8),
+  variants: z.array(TweetVariantSchema).min(1),
 });
 
 export type ComposerResponseSchemaType = z.infer<typeof ComposerResponseSchema>;
