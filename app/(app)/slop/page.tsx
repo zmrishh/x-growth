@@ -6,7 +6,7 @@ import { Loader2, ArrowRight } from "lucide-react";
 import { SlopReport } from "@/types/analysis";
 import { SlopMeter } from "@/components/slop/SlopMeter";
 import { PhraseFlagging } from "@/components/slop/PhraseFlagging";
-import { RewriteSuggestions } from "@/components/slop/RewriteSuggestions";
+import { CleanRewrite } from "@/components/slop/CleanRewrite";
 import { AIThinkingState } from "@/components/shared/AIThinkingState";
 import { ExpandableReasoning } from "@/components/shared/ExpandableReasoning";
 import { countChars } from "@/lib/utils/format";
@@ -17,11 +17,14 @@ const SLOP_EXAMPLES = [
   `Most people building in public are doing it wrong.\n\nThey share progress. Not thinking.\n\nThe ones who compound fastest share the cognitive residue — the reasoning behind decisions that didn't work.`,
 ];
 
+type ResultTab = "flagged" | "rewrite";
+
 export default function SlopPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SlopReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ResultTab>("flagged");
 
   const charCount = countChars(input);
   const overLimit = charCount > MAX_INPUT_CHARS;
@@ -31,6 +34,7 @@ export default function SlopPage() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setActiveTab("flagged");
 
     try {
       const res = await fetch("/api/slop", {
@@ -64,7 +68,7 @@ export default function SlopPage() {
           Slop Detector
         </h1>
         <p className="text-sm" style={{ color: "var(--color-text-tertiary)" }}>
-          Identify generic AI patterns, clichés, engagement bait, and low-density writing.
+          Detect generic AI patterns, clichés, and low-density writing. Get a clean version with annotated changes.
         </p>
       </motion.div>
 
@@ -92,7 +96,7 @@ export default function SlopPage() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Paste content to analyze for slop patterns..."
+              placeholder="Paste content to analyze and rewrite..."
               rows={6}
               className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--color-text-disabled)] leading-relaxed"
               style={{ color: "var(--color-text-primary)" }}
@@ -114,7 +118,7 @@ export default function SlopPage() {
                 style={{ background: "var(--color-accent)", color: "#09090b" }}
               >
                 {loading ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-                {loading ? "Detecting..." : "Detect Slop"}
+                {loading ? "Analyzing..." : "Detect + Rewrite"}
               </button>
             </div>
           </div>
@@ -162,17 +166,77 @@ export default function SlopPage() {
                       border: "1px solid var(--color-border-subtle)",
                     }}
                   >
-                    <AIThinkingState label="Scanning for slop patterns..." />
+                    <AIThinkingState label="Detecting slop and generating clean rewrite..." />
                   </div>
                 ) : result ? (
-                  <div className="space-y-4">
-                    <PhraseFlagging
-                      originalText={input}
-                      flaggedPhrases={result.flaggedPhrases}
-                    />
-                    {result.rewriteSuggestions.length > 0 && (
-                      <RewriteSuggestions suggestions={result.rewriteSuggestions} />
-                    )}
+                  <div className="space-y-3">
+                    {/* Result tabs */}
+                    <div
+                      className="flex items-center gap-1 p-1 rounded-xl"
+                      style={{
+                        background: "var(--color-bg-surface)",
+                        border: "1px solid var(--color-border-subtle)",
+                      }}
+                    >
+                      {(
+                        [
+                          { id: "flagged" as ResultTab, label: "Flagged Phrases", count: result.flaggedPhrases.length },
+                          { id: "rewrite" as ResultTab, label: "Clean Rewrite", count: result.rewriteChangelog.length },
+                        ] as const
+                      ).map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id)}
+                          className="flex-1 flex items-center justify-center gap-2 text-xs py-2 rounded-lg transition-all"
+                          style={{
+                            background: activeTab === tab.id ? "var(--color-bg-elevated)" : "transparent",
+                            color: activeTab === tab.id ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
+                            border: `1px solid ${activeTab === tab.id ? "var(--color-border-strong)" : "transparent"}`,
+                          }}
+                        >
+                          {tab.label}
+                          <span
+                            className="text-[9px] px-1.5 py-0.5 rounded-full"
+                            style={{
+                              background: activeTab === tab.id ? "var(--color-accent-muted)" : "var(--color-bg-overlay)",
+                              color: activeTab === tab.id ? "var(--color-accent)" : "var(--color-text-disabled)",
+                            }}
+                          >
+                            {tab.count}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                      {activeTab === "flagged" ? (
+                        <motion.div
+                          key="flagged"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.12 }}
+                        >
+                          <PhraseFlagging
+                            originalText={input}
+                            flaggedPhrases={result.flaggedPhrases}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="rewrite"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.12 }}
+                        >
+                          <CleanRewrite
+                            cleanRewrite={result.cleanRewrite}
+                            changelog={result.rewriteChangelog}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 ) : null}
               </motion.div>

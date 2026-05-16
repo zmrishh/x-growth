@@ -27,7 +27,14 @@ export interface ViralityReport {
 export interface SlopFlaggedPhrase {
   phrase: string;
   reason: string;
-  category: SlopCategory;
+  category: string;
+}
+
+export interface RewriteChange {
+  original: string;
+  replacement: string;
+  reason: string;
+  category: string;
 }
 
 export type SlopCategory =
@@ -41,9 +48,10 @@ export type SlopCategory =
 export interface SlopReport {
   slopScore: number;
   flaggedPhrases: SlopFlaggedPhrase[];
-  slopCategories: SlopCategory[];
+  slopCategories: string[];
   reasoning: string;
-  rewriteSuggestions: string[];
+  cleanRewrite: string;
+  rewriteChangelog: RewriteChange[];
   overallVerdict: "clean" | "mild" | "moderate" | "severe";
 }
 

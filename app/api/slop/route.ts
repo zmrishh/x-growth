@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       system: SLOP_SYSTEM_PROMPT,
       user: buildSlopUserPrompt(content),
       schema: SlopReportSchema,
-      maxTokens: 1500,
+      maxTokens: 3000,
     });
 
     return NextResponse.json(result);

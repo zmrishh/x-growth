@@ -10,12 +10,20 @@ const FlaggedPhraseSchema = z.object({
   category: z.string().nullable().optional().transform((v) => v ?? "cliche"),
 });
 
+const RewriteChangeSchema = z.object({
+  original: str,
+  replacement: str,
+  reason: str,
+  category: z.string().nullable().optional().transform((v) => v ?? "cliche"),
+});
+
 export const SlopReportSchema = z.object({
   slopScore: num(),
   flaggedPhrases: z.array(FlaggedPhraseSchema).nullable().optional().transform((v) => v ?? []),
   slopCategories: z.array(z.string()).nullable().optional().transform((v) => v ?? []),
   reasoning: str,
-  rewriteSuggestions: z.array(z.string()).nullable().optional().transform((v) => v ?? []),
+  cleanRewrite: str,
+  rewriteChangelog: z.array(RewriteChangeSchema).nullable().optional().transform((v) => v ?? []),
   overallVerdict: z
     .enum(["clean", "mild", "moderate", "severe"])
     .nullable()
